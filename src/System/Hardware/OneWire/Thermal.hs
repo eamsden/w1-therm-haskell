@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Lib
+module System.Hardware.OneWire.Thermal
     ( ThermalSerial(..)
     , thermalSerials
     , thermalSensorCelsius

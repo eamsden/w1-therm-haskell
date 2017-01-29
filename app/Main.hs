@@ -1,9 +1,9 @@
 module Main where
 
-import Lib
 import Control.Concurrent
 import Control.Monad
 import Data.Scientific
+import System.Hardware.OneWire.Thermal
 
 main :: IO ()
 main = do
