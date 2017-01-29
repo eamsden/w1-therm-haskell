@@ -25,6 +25,7 @@ library
                      , filepath
                      , MissingH
                      , bytestring
+                     , unix
   default-language:    Haskell2010
 
 executable w1-therm-haskell-exe

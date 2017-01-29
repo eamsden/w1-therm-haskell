@@ -6,7 +6,6 @@ module Lib
     ) where
 
 import           Control.Applicative   ((<|>))
-import           Control.Concurrent
 import           Data.Attoparsec.Text
 import           Data.Monoid           ((<>))
 import           Data.Scientific       (Scientific())
@@ -19,6 +18,7 @@ import           Data.List             (delete)
 import           System.IO             (FilePath, withFile, IOMode(..), hSetBuffering, BufferMode(..))
 import           System.FilePath.Posix ((</>))
 import           System.Directory      (listDirectory)
+import           System.Posix.Signals  (getSignalMask, setSignalMask, addSignal, sigVTALRM, sigALRM)
 import           Text.Parser.Char      (hexDigit)
 
 -- | Where the thermal devices are listed in the filesystem
@@ -41,7 +41,7 @@ thermalSensorCelsius (ThermalSerial serial) = do
   w1SensorOutput <- withFile (thermalDevicesPath </> serial </> "w1_slave") ReadMode
     $ (\handle -> do
           hSetBuffering handle NoBuffering
-          Text.decodeUtf8 <$> nonBlockingGet handle)
+          Text.decodeUtf8 <$> (withNoRTSTicks $ ByteString.hGetSome handle 76))
   return $ either (const Nothing) id $ parseOnly thermalSensorParser w1SensorOutput
   where
     thermalSensorParser :: Parser (Maybe Scientific)
@@ -68,11 +68,12 @@ thermalSensorCelsius (ThermalSerial serial) = do
 
     hexPair = hexDigit *> hexDigit *> skipSpace
     nineHexPairs = count 9 hexPair
-    nonBlockingGet handle = do
-      mv <- newEmptyMVar
-      forkOS $ do
-        bs <- ByteString.hGetSome handle 76
-        putMVar mv bs
-      takeMVar mv
 
-
+-- | Block RTS tick signals during the body of this block
+withNoRTSTicks :: IO a -> IO a
+withNoRTSTicks action = do
+  currentMask <- getSignalMask
+  setSignalMask $ sigALRM `addSignal` sigVTALRM `addSignal` currentMask
+  result <- action
+  setSignalMask currentMask
+  return result
