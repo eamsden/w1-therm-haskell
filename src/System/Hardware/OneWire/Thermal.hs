@@ -6,6 +6,7 @@ module System.Hardware.OneWire.Thermal
     ) where
 
 import           Control.Applicative   ((<|>))
+import           Control.Exception     (bracket)
 import           Data.Attoparsec.Text
 import           Data.Monoid           ((<>))
 import           Data.Scientific       (Scientific())
@@ -71,9 +72,11 @@ thermalSensorCelsius (ThermalSerial serial) = do
 
 -- | Block RTS tick signals during the body of this block
 withNoRTSTicks :: IO a -> IO a
-withNoRTSTicks action = do
-  currentMask <- getSignalMask
-  setSignalMask $ sigALRM `addSignal` sigVTALRM `addSignal` currentMask
-  result <- action
-  setSignalMask currentMask
-  return result
+withNoRTSTicks action = 
+  bracket
+  (do
+     currentSignalMask <- getSignalMask
+     setSignalMask $ sigALRM `addSignal` sigVTALRM `addSignal` currentSignalMask
+     return currentSignalMask)
+  setSignalMask
+  (const action)
