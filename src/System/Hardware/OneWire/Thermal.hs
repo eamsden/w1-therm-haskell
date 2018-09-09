@@ -30,10 +30,7 @@ newtype ThermalSerial = ThermalSerial { _thermalSerial :: FilePath } deriving (S
 
 -- | List the thermal serials
 thermalSerials :: IO [ThermalSerial]
-thermalSerials = do
-  serials <- map ThermalSerial <$> filter (not . startswith "w1_bus_master") <$> listDirectory thermalDevicesPath
-  mapM print serials
-  return serials
+thermalSerials = map ThermalSerial <$> filter (not . startswith "w1_bus_master") <$> listDirectory thermalDevicesPath
 
 -- | Read a thermal sensor's celsius temperature
 thermalSensorCelsius :: ThermalSerial -> IO (Maybe Scientific)
